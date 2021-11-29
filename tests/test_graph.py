@@ -1,7 +1,7 @@
 from itertools import combinations
 from os.path import join
 import pytest
-from graph import Graph, Node, Edge, Clique, CliqueConstraintViolationError
+from graph import Graph, Node, Edge, Clique, CliqueConstraintViolationError, NoSuchNodeException
 
 
 @pytest.fixture(scope='function')
@@ -22,8 +22,8 @@ def k5_graph():
     graph = Graph()
     nodes = [Node(i) for i in range(5)]
     graph.add_nodes(nodes)
-    for start_node, end_node in combinations(range(5), 2):
-        edge = Edge(Node(start_node), Node(end_node))
+    for start_node, end_node in combinations(nodes, 2):
+        edge = Edge(start_node, end_node)
         graph.add_edge(edge)
     yield graph
 
@@ -37,9 +37,10 @@ def k5_plus_one(k5_graph):
         3 - 4 - 5
     """
     graph = k5_graph
-    graph.add_node(Node(5))
+    new_node = Node(5)
+    graph.add_node(new_node)
     graph.add_edge(
-        Edge(Node(4), Node(5))
+        Edge(graph.get_node_by_index(4), new_node)
     )
     yield graph
 
@@ -64,8 +65,22 @@ def test_indirect_edges(default_graph):
 def test_get_node_edges(k5_graph):
     graph = k5_graph
 
-    expected_edges = {Edge(Node(0), Node(i)) for i in range(1, 5)}
-    assert graph.get_node_edges(Node(0)) == expected_edges
+    expected_edges = {Edge(graph.get_node_by_index(0), Node(i)) for i in range(1, 5)}
+    assert graph.get_node_edges(graph.get_node_by_index(0)) == expected_edges
+
+
+def test_get_node_by_index(k5_graph):
+    graph = k5_graph
+
+    for i, node in enumerate(sorted(graph.nodes, key=lambda x: x.idx)):
+        assert node == graph.get_node_by_index(i)
+
+    with pytest.raises(NoSuchNodeException):
+        graph.get_node_by_index(-1)
+
+
+def test_graph_repr(k5_graph):
+    assert repr(k5_graph) == 'Graph(5, 10)'
 
 
 @pytest.mark.parametrize(

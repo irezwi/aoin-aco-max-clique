@@ -5,14 +5,25 @@ from typing import Set, Iterable
 from scipy.io import mmread
 
 
+class NoSuchNodeException(Exception):
+    """ Raised when requested node does not exist """
+    pass
+
+
 @total_ordering
-@dataclass(eq=True, frozen=True, unsafe_hash=True)
+@dataclass()
 class Node:
     idx: int
     pheromone: float = 0.0
 
     def __lt__(self, other) -> bool:
         return self.pheromone < other.pheromone
+
+    def __eq__(self, other):
+        return self.idx == other.idx
+
+    def __hash__(self):
+        return hash(self.idx)
 
 
 @dataclass(frozen=True)
@@ -94,6 +105,17 @@ class Graph:
         :returns: Set of edges connected to `node`
         """
         return {edge for edge in self.edges if node in edge.nodes}
+
+    def get_node_by_index(self, index: int) -> Node:
+        """
+        :param index: Index of the requested node
+        :return: Node instance with given `index` that belongs to graph
+        :raises NoSuchNodeException: if node with requested index doesnt belong to graph
+        """
+        try:
+            return next((node for node in self.nodes if node.idx == index))
+        except StopIteration:
+            raise NoSuchNodeException(f'Cannot find node with index {index}')
 
 
 class CliqueConstraintViolationError(Exception):
