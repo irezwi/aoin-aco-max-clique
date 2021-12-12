@@ -30,6 +30,7 @@ if __name__ == '__main__':
             aco.run()
         elif args.algorithm == 'ref':
             ref = ReferenceAlgorithm(
+                output=args.output,
                 graph=graph
             )
             aco.run()
