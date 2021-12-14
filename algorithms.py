@@ -31,9 +31,9 @@ class ReferenceAlgorithm(Algorithm):
 
     class Agent:
         def __init__(self, graph):
-            self.current_node = random.choice(list(graph.nodes))
             self.clique = Clique(graph)
-            self.clique.add_node(self.current_node)
+            # Initialize clique with randomly chosen node
+            self.clique.add_node(random.choice(list(graph.nodes)))
             self.graph = graph
             self.finished = False
 
@@ -57,4 +57,4 @@ class ReferenceAlgorithm(Algorithm):
 
             should_stop = all(map(lambda x: x.finished, self.agents))
             print(f'best so far: {max(len(agent.clique.nodes) for agent in self.agents)}, '
-                  f'agents still alive: {len([agent for agent in self.agents if agent.finished is False])}')
+                  f'agents still alive: {len([agent for agent in self.agents if not agent.finished])}')

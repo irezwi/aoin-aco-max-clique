@@ -1,3 +1,4 @@
+import time
 from os.path import join
 from argparse import ArgumentParser, FileType
 
@@ -34,6 +35,8 @@ if __name__ == '__main__':
             graph=graph,
             agents=args.agents,
         )
+        start = time.time()
         ref.run()
+        print(f'Execution time: {time.time() - start}')
     else:
         print(f'Invalid algorithm: {args.algorithm}. Supported algorithms: aco, ref')

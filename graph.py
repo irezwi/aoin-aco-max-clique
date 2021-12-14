@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from functools import total_ordering
+from functools import total_ordering, lru_cache
 from typing import Set, Iterable
 
 from scipy.io import mmread
@@ -39,7 +39,7 @@ class Edge:
         return {self.node_a, self.node_b}
 
     def __eq__(self, other) -> bool:
-        return {self.node_a, self.node_b} == {other.node_a, other.node_b}
+        return self.nodes == other.nodes
 
     def __hash__(self):
         return hash(tuple(sorted(self.nodes, key=lambda n: n.idx)))
@@ -59,6 +59,8 @@ class Graph:
         if edge not in self.edges:
             self.edges.add(edge)
             self.add_nodes(edge.nodes)
+        self.get_node_edges.cache_clear()
+        self.get_node_neighbours.cache_clear()
 
     def add_node(self, node: Node) -> None:
         """
@@ -99,12 +101,27 @@ class Graph:
 
         return instance
 
+    @lru_cache
     def get_node_edges(self, node: Node) -> Set[Edge]:
         """
         :param node: Node which edges set should be returned
         :returns: Set of edges connected to `node`
         """
         return {edge for edge in self.edges if node in edge.nodes}
+
+    @lru_cache
+    def get_node_neighbours(self, node: Node) -> Set[Node]:
+        """
+        :param node: Node which neighbours should be returned
+        :returns: Set of nodes directly connected to `node`
+        """
+        neighbours = set()
+        node_edges = self.get_node_edges(node)
+        for edge in node_edges:
+            for edge_node in edge.nodes:
+                if edge_node != node:
+                    neighbours.add(edge_node)
+        return neighbours
 
     def get_node_by_index(self, index: int) -> Node:
         """
@@ -148,16 +165,18 @@ class Clique:
         :raises CliqueConstraintViolationError: if node given as argument cannot be added to clique
         """
         if self.__is_connected_with_all_nodes(node):
-            self.nodes.add(node)
             self.edges.update(
-                {Edge(existing_node, node) for existing_node in filter(lambda n: n != node, self.nodes)}
+                {Edge(existing_node, node) for existing_node in self.nodes}
             )
+            self.nodes.add(node)
         else:
             raise CliqueConstraintViolationError(
-                f"Cannot add node {node} because it's not connected to all existing nodes")
+                f"Cannot add node {node} because it's not connected to all existing nodes: {self.nodes}")
 
     def get_candidates(self):
-        graph_nodes = sorted(self.graph.nodes, key=lambda node: node.idx)
-        possible_candidates = [node for node in graph_nodes if self.__is_connected_with_all_nodes(node)]
+        possible_candidates = [node for node in self.graph.nodes if self.__is_connected_with_all_nodes(node)]
 
-        return sorted(possible_candidates)
+        # Slower alternative:
+        # possible_candidates = [neighbour for node in self.nodes for neighbour in self.graph.get_node_neighbours(node) if self.__is_connected_with_all_nodes(neighbour)]
+
+        return possible_candidates
