@@ -41,20 +41,16 @@ class ReferenceAlgorithm(Algorithm):
             return f'Agent(clique_size={len(self.clique.nodes)}, finished={self.finished})'
 
     def run(self):
-        should_stop = False
-
-        while not should_stop:
-            unfinished_agents = filter(lambda a: not a.finished, self.agents)
-            for agent in unfinished_agents:
-                candidates = agent.clique.get_candidates()
-                if not candidates:
-                    agent.finished = True
-                else:
+        for agent in self.agents:
+            while not agent.finished:
+                if candidates := agent.clique.get_candidates():
                     # Select next node by random choice weighted by edges count
                     next_node = random.choices(
                         candidates, weights=[len(self.graph.get_node_edges(node)) for node in candidates], k=1)[0]
                     agent.clique.add_node(next_node)
+                else:
+                    agent.finished = True
 
-            should_stop = all(map(lambda x: x.finished, self.agents))
             print(f'best so far: {max(len(agent.clique.nodes) for agent in self.agents)}, '
+                  f'last result: {len(agent.clique.nodes)}, '
                   f'agents still alive: {len([agent for agent in self.agents if not agent.finished])}')
