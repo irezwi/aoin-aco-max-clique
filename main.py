@@ -1,5 +1,3 @@
-import logging
-import time
 from argparse import ArgumentParser, FileType
 
 from graph import Graph
@@ -36,7 +34,6 @@ if __name__ == '__main__':
             graph=graph,
             agents=args.agents,
         )
-        start = time.time()
         result = ref.run()
         result.save(args.output)
         print(f'Execution time: {result.execution_time}')

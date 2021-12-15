@@ -1,7 +1,6 @@
 from abc import ABCMeta, abstractmethod
 import random
 import time
-from dataclasses import dataclass
 
 from graph import Clique
 
@@ -16,13 +15,13 @@ class Algorithm(metaclass=ABCMeta):
         raise NotImplementedError
 
 
-@dataclass(frozen=True)
 class ExecutionResult:
-    best_clique_size: int
-    execution_time: float
+    def __init__(self, *args, **kwargs):
+        self.__dict__ |= kwargs
 
     def save(self, file_path):
-        file_path.write(f'{self.best_clique_size}, {self.execution_time}\n')
+        file_path.write(','.join(map(str, vars(self).values())))
+        file_path.write('\n')
 
 
 class AntColonyOptimizerAlgorithm(Algorithm):
@@ -72,6 +71,7 @@ class ReferenceAlgorithm(Algorithm):
 
         execution_time = time.time() - start_time
         return ExecutionResult(
+            agents=len(self.agents),
             best_clique_size=best_clique_size,
             execution_time=execution_time,
         )
