@@ -1,5 +1,7 @@
 from abc import ABCMeta, abstractmethod
 import random
+import time
+from dataclasses import dataclass
 
 from graph import Clique
 
@@ -12,6 +14,15 @@ class Algorithm(metaclass=ABCMeta):
     @abstractmethod
     def run(self):
         raise NotImplementedError
+
+
+@dataclass(frozen=True)
+class ExecutionResult:
+    best_clique_size: int
+    execution_time: float
+
+    def save(self, file_path):
+        file_path.write(f'{self.best_clique_size}, {self.execution_time}\n')
 
 
 class AntColonyOptimizerAlgorithm(Algorithm):
@@ -41,6 +52,9 @@ class ReferenceAlgorithm(Algorithm):
             return f'Agent(clique_size={len(self.clique.nodes)}, finished={self.finished})'
 
     def run(self):
+        best_clique_size = -1
+        start_time = time.time()
+
         for agent in self.agents:
             while not agent.finished:
                 if candidates := agent.clique.get_candidates():
@@ -51,6 +65,13 @@ class ReferenceAlgorithm(Algorithm):
                 else:
                     agent.finished = True
 
-            print(f'best so far: {max(len(agent.clique.nodes) for agent in self.agents)}, '
+            best_clique_size = max(len(agent.clique.nodes) for agent in self.agents)
+            print(f'best so far: {best_clique_size}, '
                   f'last result: {len(agent.clique.nodes)}, '
                   f'agents still alive: {len([agent for agent in self.agents if not agent.finished])}')
+
+        execution_time = time.time() - start_time
+        return ExecutionResult(
+            best_clique_size=best_clique_size,
+            execution_time=execution_time,
+        )

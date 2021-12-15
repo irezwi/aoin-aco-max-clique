@@ -1,11 +1,12 @@
+import logging
 import time
-from os.path import join
 from argparse import ArgumentParser, FileType
 
 from graph import Graph
 from algorithms import AntColonyOptimizerAlgorithm, ReferenceAlgorithm
 
 arg_parser = ArgumentParser()
+arg_parser.add_argument('--input', type=FileType('r'))
 arg_parser.add_argument('--output', type=FileType('a+'))
 
 subparsers = arg_parser.add_subparsers(dest='algorithm')
@@ -20,7 +21,7 @@ ref.add_argument('--agents', help="Agents count", type=int)
 if __name__ == '__main__':
     args = arg_parser.parse_args()
 
-    graph = Graph.read_from_file(join('input', 'keller4.mtx'))
+    graph = Graph.read_from_file(args.input)
     if args.algorithm == 'aco':
         aco = AntColonyOptimizerAlgorithm(
             graph=graph,
@@ -36,7 +37,8 @@ if __name__ == '__main__':
             agents=args.agents,
         )
         start = time.time()
-        ref.run()
-        print(f'Execution time: {time.time() - start}')
+        result = ref.run()
+        result.save(args.output)
+        print(f'Execution time: {result.execution_time}')
     else:
         print(f'Invalid algorithm: {args.algorithm}. Supported algorithms: aco, ref')
