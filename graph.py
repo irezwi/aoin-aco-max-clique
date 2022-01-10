@@ -50,11 +50,23 @@ class Edge:
     __repr__ = __str__
 
 
-class Graph:
+class GraphBase:
     def __init__(self):
         self.edges: Set[Edge] = set()
         self.nodes: Set[Node] = set()
 
+    def has_edge_between(self, node_a: Node, node_b: Node) -> bool:
+        return Edge(node_a, node_b) in self.edges
+
+    def get_edge_by_nodes(self, node_a: Node, node_b: Node) -> Optional[Edge]:
+        for edge in self.edges:
+            if {node_a, node_b} == edge.nodes:
+                return edge
+        else:
+            return None
+
+
+class Graph(GraphBase):
     def add_edge(self, edge: Edge) -> None:
         """
         Adds edge to the graph
@@ -139,30 +151,15 @@ class Graph:
         except StopIteration:
             raise NoSuchNodeException(f'Cannot find node with index {index}')
 
-    def has_edge_between(self, node_a: Node, node_b: Node) -> bool:
-        for edge in self.edges:
-            if {node_a, node_b} == edge.nodes:
-                return True
-        else:
-            return False
-
-    def get_edge_by_nodes(self, node_a: Node, node_b: Node) -> Optional[Edge]:
-        for edge in self.edges:
-            if {node_a, node_b} == edge.nodes:
-                return edge
-        else:
-            return None
-
 
 class CliqueConstraintViolationError(Exception):
     """ Raised when any clique constraint is violated """
     pass
 
 
-class Clique:
+class Clique(GraphBase):
     def __init__(self, graph):
-        self.edges: Set[Edge] = set()
-        self.nodes: Set[Node] = set()
+        super().__init__()
         self.graph: Graph = graph
 
     def __is_connected_with_all_nodes(self, node: Node) -> bool:
