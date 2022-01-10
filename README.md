@@ -35,11 +35,14 @@ Ant colony optimizer:
 ```shell
 $ python main.py aco --help
 
-usage: main.py aco [-h] [--iterations ITERATIONS] [--ants ANTS]
+usage: main.py aco [-h] [--iterations ITERATIONS] [--ants ANTS] [--alpha ALPHA]
+                   [--rho RHO]
 
 optional arguments:
   -h, --help            show this help message and exit
   --iterations ITERATIONS
                         Number of algorithm iterations
   --ants ANTS           Ants count
+  --alpha ALPHA         Alpha parameter
+  --rho RHO             Rho parameter
 ```

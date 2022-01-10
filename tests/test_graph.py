@@ -118,7 +118,7 @@ def test_error_on_invalid_add(k5_plus_one):
         clique.add_node(node)
 
     with pytest.raises(CliqueConstraintViolationError):
-        clique.add_node(invalid_node)
+        clique.add_node(invalid_node, unsafe=False)
 
 
 def test_get_candidates(k5_graph):
