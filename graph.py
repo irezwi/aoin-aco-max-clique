@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from functools import total_ordering, lru_cache
-from typing import Set, Iterable
+from typing import Set, Iterable, Optional, List
 
 from scipy.io import mmread
 
@@ -14,10 +14,9 @@ class NoSuchNodeException(Exception):
 @dataclass()
 class Node:
     idx: int
-    pheromone: float = 0.0
 
     def __lt__(self, other) -> bool:
-        return self.pheromone < other.pheromone
+        return self.idx < other.idx
 
     def __eq__(self, other):
         return self.idx == other.idx
@@ -26,10 +25,11 @@ class Node:
         return hash(self.idx)
 
 
-@dataclass(frozen=True)
 class Edge:
-    node_a: Node
-    node_b: Node
+    def __init__(self, node_a: Node, node_b: Node, pheromone: float = 0.0):
+        self.node_a = node_a
+        self.node_b = node_b
+        self.pheromone = pheromone
 
     @property
     def nodes(self) -> Set[Node]:
@@ -42,7 +42,12 @@ class Edge:
         return self.nodes == other.nodes
 
     def __hash__(self):
-        return hash(tuple(sorted(self.nodes, key=lambda n: n.idx)))
+        return hash(tuple(sorted(self.nodes)))
+
+    def __str__(self):
+        return f'Edge({self.node_a.idx}, {self.node_b.idx}, {self.pheromone})'
+
+    __repr__ = __str__
 
 
 class Graph:
@@ -134,6 +139,20 @@ class Graph:
         except StopIteration:
             raise NoSuchNodeException(f'Cannot find node with index {index}')
 
+    def has_edge_between(self, node_a: Node, node_b: Node) -> bool:
+        for edge in self.edges:
+            if {node_a, node_b} == edge.nodes:
+                return True
+        else:
+            return False
+
+    def get_edge_by_nodes(self, node_a: Node, node_b: Node) -> Optional[Edge]:
+        for edge in self.edges:
+            if {node_a, node_b} == edge.nodes:
+                return edge
+        else:
+            return None
+
 
 class CliqueConstraintViolationError(Exception):
     """ Raised when any clique constraint is violated """
@@ -154,29 +173,45 @@ class Clique:
         :return: True if all clique nodes are connected to `node`, False otherwise
         """
         return all(
-            Edge(existing_node, node) in self.graph.edges for existing_node in self.nodes
+            self.graph.has_edge_between(node, existing_node) for existing_node in self.nodes
         )
 
-    def add_node(self, node: Node):
+    def add_node(self, node: Node, unsafe=True):
         """
         Adds `node` to clique. Also adds edges between `node` and existing clique nodes.
 
         :param node: Node to be added to clique
         :raises CliqueConstraintViolationError: if node given as argument cannot be added to clique
         """
-        if self.__is_connected_with_all_nodes(node):
+        if unsafe or self.__is_connected_with_all_nodes(node):
             self.edges.update(
-                {Edge(existing_node, node) for existing_node in self.nodes}
+                {self.graph.get_edge_by_nodes(node, existing_node) for existing_node in self.nodes}
             )
             self.nodes.add(node)
         else:
             raise CliqueConstraintViolationError(
                 f"Cannot add node {node} because it's not connected to all existing nodes: {self.nodes}")
 
-    def get_candidates(self):
+    def get_candidates(self) -> List[Node]:
         possible_candidates = [node for node in self.graph.nodes if self.__is_connected_with_all_nodes(node)]
 
         # Slower alternative:
         # possible_candidates = [neighbour for node in self.nodes for neighbour in self.graph.get_node_neighbours(node) if self.__is_connected_with_all_nodes(neighbour)]
 
         return possible_candidates
+
+    def get_edge_candidates(self) -> List[Edge]:
+        node_candidates = self.get_candidates()
+        edge_candidates = []
+        for node_candidate in node_candidates:
+            for clique_node in self.nodes:
+                edge_candidates.append(self.graph.get_edge_by_nodes(node_candidate, clique_node))
+
+        return edge_candidates
+
+    def get_pheromone_factor(self, node: Node) -> float:
+        """
+        Returns pheromone factor for (Node, Clique) pair.
+        Pheromone factor is a sum of pheromones on all edges connecting `node` and clique's nodes.
+        """
+        return sum(self.graph.get_edge_by_nodes(clique_node, node).pheromone for clique_node in self.nodes)

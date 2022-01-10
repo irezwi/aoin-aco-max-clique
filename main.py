@@ -10,32 +10,37 @@ arg_parser.add_argument('--output', type=FileType('a+'))
 subparsers = arg_parser.add_subparsers(dest='algorithm')
 
 aco = subparsers.add_parser('aco')
-aco.add_argument('--iterations', help="Number of algorithm iterations", type=int, default=1000)
-aco.add_argument('--ants', help="Ants count", type=int, default=10)
+aco.add_argument('--iterations', help="Number of algorithm iterations", type=int, default=100)
+aco.add_argument('--ants', help="Ants count", type=int, default=100)
+aco.add_argument('--alpha', help="Alpha parameter", type=float, default=2.0)
+aco.add_argument('--rho', help="Rho parameter", type=float, default=0.995)
 
 ref = subparsers.add_parser('ref')
-ref.add_argument('--agents', help="Agents count", type=int)
+ref.add_argument('--agents', help="Agents count", type=int, default=10)
 
 if __name__ == '__main__':
     args = arg_parser.parse_args()
-
+    algo = None
     graph = Graph.read_from_file(args.input)
     if args.algorithm == 'aco':
-        aco = AntColonyOptimizerAlgorithm(
+        algo = AntColonyOptimizerAlgorithm(
             graph=graph,
+            output=args.output,
             iterations=args.iterations,
             ants=args.ants,
-            output=args.output,
+            alpha=args.alpha,
+            rho=args.rho
         )
-        aco.run()
     elif args.algorithm == 'ref':
-        ref = ReferenceAlgorithm(
+        algo = ReferenceAlgorithm(
             output=args.output,
             graph=graph,
             agents=args.agents,
         )
-        result = ref.run()
-        result.save(args.output)
-        print(f'Execution time: {result.execution_time}')
     else:
         print(f'Invalid algorithm: {args.algorithm}. Supported algorithms: aco, ref')
+
+    if algo:
+        result = algo.run()
+        result.save(args.output)
+        print(f'Execution time: {result.execution_time}')
