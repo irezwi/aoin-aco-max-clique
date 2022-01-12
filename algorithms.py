@@ -60,6 +60,7 @@ class AntColonyOptimizerAlgorithm(Algorithm):
             edge.pheromone = min(edge.pheromone + 1 / (1 + len(runtime_best.nodes) - len(iter_best.nodes)), self.T_MAX)
 
     def run(self):
+        start_time = time.time()
         self.__initialize_pheromone()
 
         current_iteration = 0
@@ -90,6 +91,7 @@ class AntColonyOptimizerAlgorithm(Algorithm):
             alpha=self.alpha,
             rho=self.rho,
             best_clique_size=len(runtime_best.nodes),
+            execution_time=time.time() - start_time,
         )
 
 
