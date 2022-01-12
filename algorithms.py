@@ -37,8 +37,8 @@ class Agent:
 
 
 class AntColonyOptimizerAlgorithm(Algorithm):
-    T_MIN = 0.01
-    T_MAX = 5
+    PHEROMONE_MIN = 0.01
+    PHEROMONE_MAX = 5
 
     def __init__(self, graph, output, iterations, ants, alpha, rho):
         super().__init__(graph, output)
@@ -49,15 +49,15 @@ class AntColonyOptimizerAlgorithm(Algorithm):
 
     def __initialize_pheromone(self):
         for edge in self.graph.edges:
-            edge.pheromone = self.T_MAX
+            edge.pheromone = self.PHEROMONE_MAX
 
     def __evaporate_pheromone(self):
         for edge in self.graph.edges:
-            edge.pheromone = max(edge.pheromone * self.rho, self.T_MIN)
+            edge.pheromone = max(edge.pheromone * self.rho, self.PHEROMONE_MIN)
 
     def __lay_pheromone(self, iter_best: Clique, runtime_best: Clique):
         for edge in iter_best.edges:
-            edge.pheromone = min(edge.pheromone + 1 / (1 + len(runtime_best.nodes) - len(iter_best.nodes)), self.T_MAX)
+            edge.pheromone = min(edge.pheromone + 1 / (1 + len(runtime_best.nodes) - len(iter_best.nodes)), self.PHEROMONE_MAX)
 
     def run(self):
         start_time = time.time()
@@ -70,10 +70,7 @@ class AntColonyOptimizerAlgorithm(Algorithm):
             ants = [Agent(self.graph) for _ in range(self.ants)]
             for ant in ants:
                 while candidates := ant.clique.get_candidates():
-
                     ph_factors = [ant.clique.get_pheromone_factor(candidate) ** self.alpha for candidate in candidates]
-                    # ph_probabi = [factor / sum(ph_factors) for factor in ph_factors]
-
                     next_node = random.choices(population=candidates, weights=ph_factors, k=1)[0]
                     ant.clique.add_node(next_node)
 
