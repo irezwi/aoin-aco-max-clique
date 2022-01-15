@@ -1,17 +1,26 @@
 from itertools import combinations
 from os.path import join
+
 import pytest
-from graph import Graph, Node, Edge, Clique, CliqueConstraintViolationError, NoSuchNodeException
+
+from graph import (
+    Clique,
+    CliqueConstraintViolationError,
+    Edge,
+    Graph,
+    Node,
+    NoSuchNodeException,
+)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def default_graph():
-    """ Empty graph """
+    """Empty graph"""
     graph = Graph()
     return graph
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def k5_graph():
     """
     Graph:
@@ -19,16 +28,16 @@ def k5_graph():
         | X |
         3 - 4
     """
-    graph = Graph()
+    graph = Graph("k5.mtx")
     nodes = [Node(i) for i in range(5)]
     graph.add_nodes(nodes)
     for start_node, end_node in combinations(nodes, 2):
-        edge = Edge(start_node, end_node)
+        edge = Edge(start_node, end_node, 0)
         graph.add_edge(edge)
     yield graph
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def k5_plus_one(k5_graph):
     """
     Graph:
@@ -39,17 +48,15 @@ def k5_plus_one(k5_graph):
     graph = k5_graph
     new_node = Node(5)
     graph.add_node(new_node)
-    graph.add_edge(
-        Edge(graph.get_node_by_index(4), new_node)
-    )
+    graph.add_edge(Edge(graph.get_node_by_index(4), new_node, 0))
     yield graph
 
 
 def test_indirect_edges(default_graph):
     graph = default_graph
     n1, n2 = Node(1), Node(2)
-    from_n1_to_n2 = Edge(n1, n2)
-    from_n2_to_n1 = Edge(n2, n1)
+    from_n1_to_n2 = Edge(n1, n2, 0)
+    from_n2_to_n1 = Edge(n2, n1, 0)
 
     graph.add_edge(from_n1_to_n2)
     graph.add_edge(from_n2_to_n1)
@@ -65,7 +72,7 @@ def test_indirect_edges(default_graph):
 def test_get_node_edges(k5_graph):
     graph = k5_graph
 
-    expected_edges = {Edge(graph.get_node_by_index(0), Node(i)) for i in range(1, 5)}
+    expected_edges = {Edge(graph.get_node_by_index(0), Node(i), 0) for i in range(1, 5)}
     assert graph.get_node_edges(graph.get_node_by_index(0)) == expected_edges
 
 
@@ -80,19 +87,19 @@ def test_get_node_by_index(k5_graph):
 
 
 def test_graph_repr(k5_graph):
-    assert repr(k5_graph) == 'Graph(5, 10)'
+    assert repr(k5_graph) == "Graph(5, 10)"
 
 
 @pytest.mark.parametrize(
     "file, expected_nodes, expected_edges",
     [
-        ('soc-dolphins.mtx', 62, 159),
-        ('keller5.mtx', 776, 225990),
-    ]
+        ("soc-dolphins.mtx", 62, 159),
+        ("keller5.mtx", 776, 225990),
+    ],
 )
 def test_read_from_file(file, expected_nodes, expected_edges):
-    filepath = join('..', 'input', file)
-    graph = Graph.read_from_file(filepath)
+    filepath = join("..", "input", file)
+    graph = Graph(filepath)
 
     assert len(graph.nodes) == expected_nodes
     assert len(graph.edges) == expected_edges
@@ -126,4 +133,6 @@ def test_get_candidates(k5_graph):
 
     for node in clique.graph.nodes:
         clique.add_node(node)
-        assert set(clique.get_candidates()) == clique.graph.nodes.difference(clique.nodes)
+        assert set(clique.get_candidates()) == clique.graph.nodes.difference(
+            clique.nodes
+        )
