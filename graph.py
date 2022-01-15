@@ -1,83 +1,92 @@
 from dataclasses import dataclass
-from functools import total_ordering, lru_cache
-from typing import Set, Iterable, Optional, List
+from itertools import starmap
+from typing import Iterable, List, Optional, Set
 
+import numpy as np
 from scipy.io import mmread
 
 
 class NoSuchNodeException(Exception):
-    """ Raised when requested node does not exist """
+    """Raised when requested node does not exist"""
+
     pass
 
 
-@total_ordering
-@dataclass()
-class Node:
-    idx: int
-
-    def __lt__(self, other) -> bool:
-        return self.idx < other.idx
-
-    def __eq__(self, other):
-        return self.idx == other.idx
-
-    def __hash__(self):
-        return hash(self.idx)
+Node = int
 
 
+@dataclass(frozen=False, unsafe_hash=True)
 class Edge:
-    def __init__(self, node_a: Node, node_b: Node, pheromone: float = 0.0):
-        self.node_a = node_a
-        self.node_b = node_b
-        self.pheromone = pheromone
+    node_a: Node
+    node_b: Node
+    pheromone: float
 
     @property
-    def nodes(self) -> Set[Node]:
-        """
-        :return: Set of two nodes that create the edge
-        """
+    def nodes(self):
         return {self.node_a, self.node_b}
 
-    def __eq__(self, other) -> bool:
-        return self.nodes == other.nodes
 
-    def __hash__(self):
-        return hash(tuple(sorted(self.nodes)))
-
-    def __str__(self):
-        return f'Edge({self.node_a.idx}, {self.node_b.idx}, {self.pheromone})'
-
-    __repr__ = __str__
+NO_EDGE = -1
 
 
 class GraphBase:
     def __init__(self):
-        self.edges: Set[Edge] = set()
-        self.nodes: Set[Node] = set()
+        self._edges: Set[Edge] = set()
+        self._nodes: Set[Node] = set()
+        self._structure = None
+
+    @property
+    def edges(self):
+        return self._edges
+
+    @property
+    def nodes(self):
+        return self._nodes
 
     def has_edge_between(self, node_a: Node, node_b: Node) -> bool:
-        return Edge(node_a, node_b) in self.edges
+        return self._structure[node_a][node_b] != NO_EDGE
 
     def get_edge_by_nodes(self, node_a: Node, node_b: Node) -> Optional[Edge]:
-        for edge in self.edges:
-            if {node_a, node_b} == edge.nodes:
-                return edge
-        else:
-            return None
+        return Edge(node_a, node_b, self._structure[node_a][node_b])
 
 
 class Graph(GraphBase):
+    def __init__(self, filepath):
+        """
+        Instantiates new Graph object initializes it with data provided in `filepath` file.
+
+        :param filepath: File containing graph data
+        :type filepath: str
+        :return: New Graph instance
+        :rtype: Graph
+        """
+        super().__init__()
+
+        if filepath:
+            g = mmread(filepath)
+            self._structure = np.ones(shape=g.shape) * -1
+
+            for node_a, node_b in zip(g.row, g.col):
+                edge = Edge(node_a, node_b, 0)
+                self.add_edge(edge)
+
+    @property
+    def edges(self):
+        indexes = np.where(self._structure != NO_EDGE)
+        return set(starmap(Edge, zip(*indexes, self._structure[indexes])))
+
+    def _modify_structure(self, node_a, node_b, value):
+        self._structure[node_a, node_b] = value
+        self._structure[node_b, node_a] = value
+
     def add_edge(self, edge: Edge) -> None:
         """
         Adds edge to the graph
 
         :param edge: Edge to be added
         """
-        if edge not in self.edges:
-            self.edges.add(edge)
-            self.add_nodes(edge.nodes)
-        self.get_node_edges.cache_clear()
-        self.get_node_neighbours.cache_clear()
+        self.add_nodes(edge.nodes)
+        self._modify_structure(edge.node_a, edge.node_b, edge.pheromone)
 
     def add_node(self, node: Node) -> None:
         """
@@ -96,29 +105,8 @@ class Graph(GraphBase):
         self.nodes.update(nodes)
 
     def __repr__(self) -> str:
-        return f'Graph({len(self.nodes)}, {len(self.edges)})'
+        return f"Graph({len(self.nodes)}, {len(self.edges)})"
 
-    @classmethod
-    def read_from_file(cls, filepath):
-        """
-        Instantiates new Graph object initializes it with data provided in `filepath` file.
-
-        :param filepath: File containing graph data
-        :type filepath: str
-        :return: New Graph instance
-        :rtype: Graph
-        """
-        g = mmread(filepath)
-        instance = cls()
-
-        for g_edge in zip(g.row, g.col):
-            start_node, end_node = map(Node, g_edge)
-            edge = Edge(start_node, end_node)
-            instance.add_edge(edge)
-
-        return instance
-
-    @lru_cache
     def get_node_edges(self, node: Node) -> Set[Edge]:
         """
         :param node: Node which edges set should be returned
@@ -126,7 +114,6 @@ class Graph(GraphBase):
         """
         return {edge for edge in self.edges if node in edge.nodes}
 
-    @lru_cache
     def get_node_neighbours(self, node: Node) -> Set[Node]:
         """
         :param node: Node which neighbours should be returned
@@ -140,20 +127,13 @@ class Graph(GraphBase):
                     neighbours.add(edge_node)
         return neighbours
 
-    def get_node_by_index(self, index: int) -> Node:
-        """
-        :param index: Index of the requested node
-        :return: Node instance with given `index` that belongs to graph
-        :raises NoSuchNodeException: if node with requested index doesnt belong to graph
-        """
-        try:
-            return next((node for node in self.nodes if node.idx == index))
-        except StopIteration:
-            raise NoSuchNodeException(f'Cannot find node with index {index}')
+    def set_pheromone(self, node_a, node_b, value):
+        self._modify_structure(node_a, node_b, value)
 
 
 class CliqueConstraintViolationError(Exception):
-    """ Raised when any clique constraint is violated """
+    """Raised when any clique constraint is violated"""
+
     pass
 
 
@@ -170,7 +150,8 @@ class Clique(GraphBase):
         :return: True if all clique nodes are connected to `node`, False otherwise
         """
         return all(
-            self.graph.has_edge_between(node, existing_node) for existing_node in self.nodes
+            self.graph.has_edge_between(node, existing_node)
+            for existing_node in self.nodes
         )
 
     def add_node(self, node: Node, unsafe=True):
@@ -182,15 +163,23 @@ class Clique(GraphBase):
         """
         if unsafe or self.__is_connected_with_all_nodes(node):
             self.edges.update(
-                {self.graph.get_edge_by_nodes(node, existing_node) for existing_node in self.nodes}
+                {
+                    self.graph.get_edge_by_nodes(node, existing_node)
+                    for existing_node in self.nodes
+                }
             )
             self.nodes.add(node)
         else:
             raise CliqueConstraintViolationError(
-                f"Cannot add node {node} because it's not connected to all existing nodes: {self.nodes}")
+                f"Cannot add node {node} because it's not connected to all existing nodes: {self.nodes}"
+            )
 
     def get_candidates(self) -> List[Node]:
-        possible_candidates = [node for node in self.graph.nodes if self.__is_connected_with_all_nodes(node)]
+        possible_candidates = [
+            node
+            for node in self.graph.nodes
+            if self.__is_connected_with_all_nodes(node)
+        ]
 
         # Slower alternative:
         # possible_candidates = [neighbour for node in self.nodes for neighbour in self.graph.get_node_neighbours(node) if self.__is_connected_with_all_nodes(neighbour)]
@@ -202,7 +191,9 @@ class Clique(GraphBase):
         edge_candidates = []
         for node_candidate in node_candidates:
             for clique_node in self.nodes:
-                edge_candidates.append(self.graph.get_edge_by_nodes(node_candidate, clique_node))
+                edge_candidates.append(
+                    self.graph.get_edge_by_nodes(node_candidate, clique_node)
+                )
 
         return edge_candidates
 
@@ -211,4 +202,7 @@ class Clique(GraphBase):
         Returns pheromone factor for (Node, Clique) pair.
         Pheromone factor is a sum of pheromones on all edges connecting `node` and clique's nodes.
         """
-        return sum(self.graph.get_edge_by_nodes(clique_node, node).pheromone for clique_node in self.nodes)
+        return sum(
+            self.graph.get_edge_by_nodes(clique_node, node).pheromone
+            for clique_node in self.nodes
+        )
