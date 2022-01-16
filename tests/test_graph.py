@@ -3,7 +3,7 @@ from os.path import join
 
 import pytest
 
-from graph import (
+from src.maxclique.graph import (
     Clique,
     CliqueConstraintViolationError,
     Edge,

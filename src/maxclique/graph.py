@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from functools import lru_cache, cached_property
 from itertools import starmap
 from typing import Iterable, List, Optional, Set
 
@@ -15,7 +16,7 @@ class NoSuchNodeException(Exception):
 Node = int
 
 
-@dataclass(frozen=False, unsafe_hash=True)
+@dataclass(frozen=True, unsafe_hash=True)
 class Edge:
     node_a: Node
     node_b: Node
@@ -69,6 +70,8 @@ class Graph(GraphBase):
             for node_a, node_b in zip(g.row, g.col):
                 edge = Edge(node_a, node_b, 0)
                 self.add_edge(edge)
+
+        self.enable_cache()
 
     @property
     def edges(self):
@@ -129,6 +132,20 @@ class Graph(GraphBase):
 
     def set_pheromone(self, node_a, node_b, value):
         self._modify_structure(node_a, node_b, value)
+
+    def enable_cache(self):
+        """
+        Hacky, but it's dumb to calculate it over and over if graph structure never changes after initialization
+        """
+        self.get_node_edges = lru_cache(maxsize=None)(self.get_node_edges)
+        self.get_node_neighbours = lru_cache(maxsize=None)(self.get_node_neighbours)
+
+        # import time
+        # start = time.time()
+        # for node in self.nodes:
+        #     self.get_node_edges(node)
+        #     self.get_node_neighbours(node)
+        # print(f'Preprocessing time: {time.time() - start}')
 
 
 class CliqueConstraintViolationError(Exception):

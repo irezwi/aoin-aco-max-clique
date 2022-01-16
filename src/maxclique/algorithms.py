@@ -2,7 +2,7 @@ import random
 import time
 from abc import ABCMeta, abstractmethod
 
-from graph import Clique
+from maxclique.graph import Clique
 
 
 class Algorithm(metaclass=ABCMeta):
@@ -101,6 +101,7 @@ class AntColonyOptimizerAlgorithm(Algorithm):
 
         return ExecutionResult(
             ants=self.ants,
+            iterations=self.iterations,
             alpha=self.alpha,
             rho=self.rho,
             best_clique_size=len(runtime_best.nodes),
@@ -111,13 +112,17 @@ class AntColonyOptimizerAlgorithm(Algorithm):
 class ReferenceAlgorithm(Algorithm):
     def __init__(self, graph, output, agents):
         super().__init__(graph, output)
-        self.agents = [Agent(graph) for _ in range(agents)]
+        self.iterations = agents
 
     def run(self):
         best_clique_size = -1
         start_time = time.time()
 
-        for agent in self.agents:
+        i = 0
+        i_without_improvement = 0
+        for agent in range(self.iterations):
+            agent = Agent(graph=self.graph)
+
             while candidates := agent.clique.get_candidates():
                 # Select next node by random choice weighted by edges count
                 next_node = random.choices(
@@ -127,11 +132,24 @@ class ReferenceAlgorithm(Algorithm):
                     ],
                     k=1,
                 )[0]
+                # next_node = candidates[0]
                 agent.clique.add_node(next_node)
+
+            last_clique_size = len(agent.clique.nodes)
+            if last_clique_size > best_clique_size:
+                best_clique_size = last_clique_size
+                i_without_improvement = 0
+            else:
+                i_without_improvement += 1
+                # if i_without_improvement >= self.iterations // 5:
+                #     break
+
+            i += 1
+            print(f'{best_clique_size=}, {i=}, {i_without_improvement=}')
 
         execution_time = time.time() - start_time
         return ExecutionResult(
-            agents=len(self.agents),
+            agents=self.iterations,
             best_clique_size=best_clique_size,
             execution_time=execution_time,
         )

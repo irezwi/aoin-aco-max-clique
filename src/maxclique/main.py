@@ -1,7 +1,7 @@
 from argparse import ArgumentParser, FileType
 
-from algorithms import AntColonyOptimizerAlgorithm, ReferenceAlgorithm
-from graph import Graph
+from maxclique.algorithms import AntColonyOptimizerAlgorithm, ReferenceAlgorithm
+from maxclique.graph import Graph
 
 arg_parser = ArgumentParser()
 arg_parser.add_argument("--input", type=FileType("r"))
