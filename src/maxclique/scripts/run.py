@@ -5,12 +5,13 @@ from itertools import product
 
 from maxclique.config import OUTPUT_DIR, INPUT_DIR, PYTHON, MAIN
 
-# INPUT_FILES = INPUT_DIR.glob("**/keller*")
+AcoParam = namedtuple("AcoParam", ["rho", "alpha"])
+
 INPUT_FILES = [
     INPUT_DIR / "keller4.mtx",
     INPUT_DIR / "C500-9.mtx",
+    INPUT_DIR / "keller5.mtx",
 ]
-
 AGENTS = [
     16,
 ]
@@ -19,8 +20,6 @@ ITERATIONS = [
     200,
     300,
 ]
-
-AcoParam = namedtuple("AcoParam", ["rho", "alpha"])
 ACO_PARAMS = [
     AcoParam(0.9, 1),
     AcoParam(0.8, 1),
@@ -43,10 +42,8 @@ def run_aco(*args):
 
 
 if __name__ == '__main__':
-    # args = tuple(product(INPUT_FILES, AGENTS, range(REPEATS), ITERATIONS))
-    # with Pool(cpu_count()) as p:
-    #     p.map(run_ref, args)
-
-    args = tuple(product(INPUT_FILES, AGENTS, range(REPEATS), ITERATIONS, ACO_PARAMS))
+    args_ref = tuple(product(INPUT_FILES, AGENTS, range(REPEATS), ITERATIONS))
+    args_aco = tuple(product(INPUT_FILES, AGENTS, range(REPEATS), ITERATIONS, ACO_PARAMS))
     with Pool(cpu_count()) as p:
-        p.map(run_aco, args)
+        p.map(run_aco, args_aco)
+        p.map(run_ref, args_ref)
