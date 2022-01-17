@@ -9,7 +9,7 @@ AcoParam = namedtuple("AcoParam", ["rho", "alpha"])
 
 TESTED_FILES = [
     "keller4.mtx",
-    # "C250-9.mtx",
+    "C250-9.mtx",
     "C500-9.mtx",
     "keller5.mtx",
 ]
