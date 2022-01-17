@@ -69,6 +69,7 @@ class AntColonyOptimizerAlgorithm(Algorithm):
             )
 
     def run(self):
+        self.graph.enable_cache()
         start_time = time.time()
         self.__initialize_pheromone()
 
@@ -115,6 +116,7 @@ class ReferenceAlgorithm(Algorithm):
         self.iterations = agents
 
     def run(self):
+        self.graph.enable_cache()
         best_clique_size = -1
         start_time = time.time()
 

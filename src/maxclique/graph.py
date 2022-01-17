@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from functools import lru_cache, cached_property
+from functools import cached_property, lru_cache
 from itertools import starmap
 from typing import Iterable, List, Optional, Set
 
@@ -69,29 +69,27 @@ class Graph(GraphBase):
 
             for node_a, node_b in zip(g.row, g.col):
                 edge = Edge(node_a, node_b, 0)
-                self.add_edge(edge)
-
-        self.enable_cache()
+                self.__add_edge(edge)
 
     @property
     def edges(self):
         indexes = np.where(self._structure != NO_EDGE)
         return set(starmap(Edge, zip(*indexes, self._structure[indexes])))
 
-    def _modify_structure(self, node_a, node_b, value):
+    def __modify_structure(self, node_a, node_b, value):
         self._structure[node_a, node_b] = value
         self._structure[node_b, node_a] = value
 
-    def add_edge(self, edge: Edge) -> None:
+    def __add_edge(self, edge: Edge) -> None:
         """
         Adds edge to the graph
 
         :param edge: Edge to be added
         """
-        self.add_nodes(edge.nodes)
-        self._modify_structure(edge.node_a, edge.node_b, edge.pheromone)
+        self.__add_nodes(edge.nodes)
+        self.__modify_structure(edge.node_a, edge.node_b, edge.pheromone)
 
-    def add_node(self, node: Node) -> None:
+    def __add_node(self, node: Node) -> None:
         """
         Adds node to the graph
 
@@ -99,7 +97,7 @@ class Graph(GraphBase):
         """
         self.nodes.add(node)
 
-    def add_nodes(self, nodes: Iterable[Node]) -> None:
+    def __add_nodes(self, nodes: Iterable[Node]) -> None:
         """
         Adds nodes to the graph
 
@@ -131,7 +129,7 @@ class Graph(GraphBase):
         return neighbours
 
     def set_pheromone(self, node_a, node_b, value):
-        self._modify_structure(node_a, node_b, value)
+        self.__modify_structure(node_a, node_b, value)
 
     def enable_cache(self):
         """
@@ -139,13 +137,6 @@ class Graph(GraphBase):
         """
         self.get_node_edges = lru_cache(maxsize=None)(self.get_node_edges)
         self.get_node_neighbours = lru_cache(maxsize=None)(self.get_node_neighbours)
-
-        # import time
-        # start = time.time()
-        # for node in self.nodes:
-        #     self.get_node_edges(node)
-        #     self.get_node_neighbours(node)
-        # print(f'Preprocessing time: {time.time() - start}')
 
 
 class CliqueConstraintViolationError(Exception):
@@ -198,21 +189,7 @@ class Clique(GraphBase):
             if self.__is_connected_with_all_nodes(node)
         ]
 
-        # Slower alternative:
-        # possible_candidates = [neighbour for node in self.nodes for neighbour in self.graph.get_node_neighbours(node) if self.__is_connected_with_all_nodes(neighbour)]
-
         return possible_candidates
-
-    def get_edge_candidates(self) -> List[Edge]:
-        node_candidates = self.get_candidates()
-        edge_candidates = []
-        for node_candidate in node_candidates:
-            for clique_node in self.nodes:
-                edge_candidates.append(
-                    self.graph.get_edge_by_nodes(node_candidate, clique_node)
-                )
-
-        return edge_candidates
 
     def get_pheromone_factor(self, node: Node) -> float:
         """

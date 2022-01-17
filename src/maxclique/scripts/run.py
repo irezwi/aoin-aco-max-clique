@@ -1,9 +1,9 @@
 from collections import namedtuple
-from subprocess import call, DEVNULL
-from multiprocessing import Pool, cpu_count
 from itertools import product
+from multiprocessing import Pool, cpu_count
+from subprocess import DEVNULL, call
 
-from maxclique.config import OUTPUT_DIR, INPUT_DIR, PYTHON, MAIN
+from maxclique.config import INPUT_DIR, MAIN, OUTPUT_DIR, PYTHON
 
 AcoParam = namedtuple("AcoParam", ["rho", "alpha"])
 

@@ -1,8 +1,8 @@
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
 
-from maxclique.scripts.run import TESTED_FILES
 from maxclique.config import OUTPUT_DIR, PROJECT_ROOT
+from maxclique.scripts.run import TESTED_FILES
 
 files = [f"{file}.csv" for file in TESTED_FILES]
 
