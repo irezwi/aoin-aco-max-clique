@@ -50,6 +50,7 @@ for file in files:
         )
         ax1.set_xticks(aco_pivot_tbl.index.values)
         ax2.set_ylabel(y_label)
+        ax2.set_xlabel('Przeszukania')
         ax1.set_title(plot_title)
 
         plt.grid()

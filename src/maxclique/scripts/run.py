@@ -48,6 +48,6 @@ if __name__ == "__main__":
     args_aco = tuple(
         product(INPUT_FILES, AGENTS, range(REPEATS), ITERATIONS, ACO_PARAMS)
     )
-    with Pool(cpu_count() // 2) as p:
+    with Pool(cpu_count()) as p:
         p.map(run_aco, args_aco)
         p.map(run_ref, args_ref)
