@@ -118,8 +118,7 @@ class ReferenceAlgorithm(Algorithm):
         best_clique_size = -1
         start_time = time.time()
 
-        i = 0
-        i_without_improvement = 0
+        iteration = 0
         for agent in range(self.iterations):
             agent = Agent(graph=self.graph)
 
@@ -132,20 +131,14 @@ class ReferenceAlgorithm(Algorithm):
                     ],
                     k=1,
                 )[0]
-                # next_node = candidates[0]
                 agent.clique.add_node(next_node)
 
             last_clique_size = len(agent.clique.nodes)
             if last_clique_size > best_clique_size:
                 best_clique_size = last_clique_size
-                i_without_improvement = 0
-            else:
-                i_without_improvement += 1
-                # if i_without_improvement >= self.iterations // 5:
-                #     break
 
-            i += 1
-            print(f'{best_clique_size=}, {i=}, {i_without_improvement=}')
+            iteration += 1
+            print(f"{best_clique_size=}, {iteration=}")
 
         execution_time = time.time() - start_time
         return ExecutionResult(

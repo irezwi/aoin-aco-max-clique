@@ -8,7 +8,7 @@ files = [f"{file}.csv" for file in TESTED_FILES]
 
 for file in files:
 
-    file_name = file.split('.')[0]
+    file_name = file.split(".")[0]
 
     aco_results = pd.read_csv(
         OUTPUT_DIR / "aco" / file,
@@ -24,21 +24,29 @@ for file in files:
     ref_results["searches"] = ref_results["iterations"]
     aco_results["searches"] = aco_results["ants"] * aco_results["iterations"]
 
-    aco_pivot_tbl = pd.pivot_table(data=aco_results, columns=["rho", "alpha"], index="searches")
+    aco_pivot_tbl = pd.pivot_table(
+        data=aco_results, columns=["rho", "alpha"], index="searches"
+    )
     ref_pivot_tbl = pd.pivot_table(data=ref_results, index="searches")
 
     statistics = (
-        ('score', 'Rozmiar', f'Średni rozmiar kliki - {file_name}'),
-        ('t', 'Czas [s]', f'Średni czas wykonania - {file_name}'),
+        ("score", "Rozmiar", f"Średni rozmiar kliki - {file_name}"),
+        ("t", "Czas [s]", f"Średni czas wykonania - {file_name}"),
     )
 
     for statistic, y_label, plot_title in statistics:
 
-        ax1 = aco_pivot_tbl[statistic].plot(label='aco')
-        ax2 = ref_pivot_tbl[statistic].plot(label='reference')
+        ax1 = aco_pivot_tbl[statistic].plot(label="aco")
+        ax2 = ref_pivot_tbl[statistic].plot(label="reference")
 
         ax1.legend(
-            [*(f'ACO(rho={rho}, alpha={alpha})' for rho, alpha in list(aco_pivot_tbl.score.columns.values)), 'Alg. referencyjny']
+            [
+                *(
+                    f"ACO(rho={rho}, alpha={alpha})"
+                    for rho, alpha in list(aco_pivot_tbl.score.columns.values)
+                ),
+                "Alg. referencyjny",
+            ]
         )
         ax1.set_xticks(aco_pivot_tbl.index.values)
         ax2.set_ylabel(y_label)
