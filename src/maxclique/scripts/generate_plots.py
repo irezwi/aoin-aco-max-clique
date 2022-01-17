@@ -24,6 +24,14 @@ for file in files:
     ref_results["searches"] = ref_results["iterations"]
     aco_results["searches"] = aco_results["ants"] * aco_results["iterations"]
 
+    # Save result table
+    with open(PROJECT_ROOT / "tables" / f'{file_name}.md', 'w') as f:
+        f.write(
+            pd.concat([
+                ref_results.groupby(['searches']).mean()[['score', 't']],
+                aco_results.groupby(['rho', 'alpha', 'searches']).mean()[['score', 't']],
+            ]).sort_values(['score', 't'], ascending=[False, True]).to_markdown())
+
     aco_pivot_tbl = pd.pivot_table(
         data=aco_results, columns=["rho", "alpha"], index="searches"
     )
