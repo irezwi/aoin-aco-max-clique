@@ -1,5 +1,5 @@
 from collections import namedtuple
-from itertools import product
+from itertools import product, starmap
 from multiprocessing import Pool, cpu_count
 from subprocess import DEVNULL, call
 
@@ -22,11 +22,7 @@ ITERATIONS = [
     200,
     300,
 ]
-ACO_PARAMS = [
-    AcoParam(0.9, 1),
-    AcoParam(0.8, 1),
-    AcoParam(0.9, 2),
-]
+ACO_PARAMS = list(starmap(AcoParam, product([0.75, 0.80, 0.85, 0.90, 0.95], [1, 2, 3, 4, 5])))
 REPEATS = 10
 
 
